@@ -1,5 +1,12 @@
 Revision history for Perl extension String::Interpolate
 
+0.3  Fri May 7 2004
+	- suppress error in exec() when $_ undefined in safe_underscore mode
+	- propagate arguments from safe() constructor to new() constructor
+	- Safe::Hole in opcode-restoring mode if $Safe::Hole::VERSION > 0.09
+        - Spelling corrections in POD
+	- Thanks to Paul Kulchenko for bug report
+
 0.2  Fri Nov 14 18:50:11 2003
 	- bugfix in exec
         - experimental support for lexicals

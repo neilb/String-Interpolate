@@ -2,12 +2,12 @@ use strict;
 use warnings;
 
 package String::Interpolate;
-our $VERSION = 0.2;
+our $VERSION = 0.3;
 use Carp qw( croak );
 
 =head1 NAME
 
-String::Interpolate - Wrapper for builtin the Perl interpolatation engine.
+String::Interpolate - Wrapper for builtin the Perl interpolation engine.
 
 =head1 SYNOPSIS
     
@@ -33,7 +33,7 @@ String::Interpolate - Wrapper for builtin the Perl interpolatation engine.
     my $replace = safe String::Interpolate '\u\L$1'; 
     my $search = qr/(\w+)/;
     $_ = "HELLO world\n";
-    s/$search/$replace/eg; # /e supresses optomization
+    s/$search/$replace/eg; # /e supresses optimisation
     print;
 
 =head1 DESCRIPTION
@@ -42,8 +42,8 @@ C<String::Interpolate> provides a neat interface to the solution to
 that perenial Perl problem - how to invoke the Perl string
 interpolation engine on a string contained in a scalar variable.
 
-A C<String::Interpolate> object ecapsulates a string and a context in
-which it should be subjected to Perl interpolatation.  In the
+A C<String::Interpolate> object encapsulates a string and a context in
+which it should be subjected to Perl interpolation.  In the
 simplest, default, case the context is simply the namespace (package)
 from which the constructor was called.
 
@@ -53,7 +53,7 @@ some package variables respectively prior to each interpolation.
 
 In general special globally global variables such as $_ can be used in
 the interpolation, the exception being @_ which is always empty during
-the the interpolation.
+the interpolation.
 
 The interpolated string is processed with strictures and warnings
 enabled excluding 'strict vars' and 'warnings uninitialized' so that
@@ -81,21 +81,21 @@ allow the compartment to leak.  The $_ and %_ variables are therefore
 subjected to the same similar precautions to imported symbols.  This
 behaviour can be suppressed using the unsafe_underscore() method.
 
-Perl string interpolatation can, of course, throw exceptions.  By
-default String::Interpolatate objects do not catch (or rethrow) these
+Perl string interpolation can, of course, throw exceptions.  By
+default String::Interpolate objects do not catch (or rethrow) these
 exceptions when working in a simple namespace and do trap them when
 working in a Safe compartment.  This behaviour can be overriden by the
-trap() or pragma() methods.  If an exception during interpolatation is
+trap() or pragma() methods.  If an exception during interpolation is
 trapped then undef will be returned as the result of the
-interpolatation and $@ will hold the exception in the usual way.
+interpolation and $@ will hold the exception in the usual way.
 
-When taint checking enabled, attempting to perform interpolatation
+When taint checking enabled, attempting to perform interpolation
 (using eval()) on a tainted string would naturally fail.  However,
-when using a Safe compartment, String::Interpolatate will strip the
-tainting off of the string prior to interpolatation and put it back
-afterwards.  Also String::Interpolatate will taint any arguments
+when using a Safe compartment, String::Interpolate will strip the
+tainting off of the string prior to interpolation and put it back
+afterwards.  Also String::Interpolate will taint any arguments
 passed to callback functions called as the result of performing
-interpolatation on a tainted string.  Note that due to the mechanism
+interpolation on a tainted string.  Note that due to the mechanism
 used to assign $1 et al they can never be tained even if the values in
 the array being used to set them are tainted.
 
@@ -118,7 +118,7 @@ sub prevent_blessed_error_hack () {
 }
 
 # During Carp::confess stack dumps we don't want to exec()
-# %dbgpkg is a package variable as callers may want to manipuate it.
+# %dbgpkg is a package variable as callers may want to manipulate it.
 
 our %dbgpkg = (
 	     Carp => 1,
@@ -199,29 +199,31 @@ sub new {
 
 =item safe
 
-Alternative contstuctor to create a String::Interpolate object that
+Alternative constuctor to create a String::Interpolate object that
 uses an automatically allocated temporary Safe compartment.  The
 automatically allocated Safe compartment will have the default opcode
 mask but with the 'bless' opcode denied as this can be used to execute
 code outside the compartment by putting it in DESTROY methods.  The
 'tie' opcode is also denied although I'm not sure if it really can be
-exploited in this way.
+exploited in this way.  There is no point explicitly passing a package
+or existing safe compartment to this constructor as it will be ignored.
 
 The argument list is passed to exec() as in new().
 
 The safe() method can also be called on an existing object in which
 case it instructs the object to forget its current Safe compartment or
 namespace and use an automatically allocated temporary Safe
-compartment henseforth.
+compartment henceforth.
 
 =cut
 
 sub safe {
     my $self = shift;
-    $self = $self->new unless ref $self;
+    $self = $self->new(@_) unless ref $self;
     $self->free_tmppkg;
     delete @$$self{'pkg','explicit_pkg','safe'};
     $$self->{implicit_safe}++;
+    require Safe;
     $self;
 }
 
@@ -240,8 +242,8 @@ context.  The following are equivalent pairs:
 
 The exec() method modifies the object according the argument list.
 Then, if called in a non-void context, returns the result of the
-interpolation.  Note that the modifications are persistant.  This
-persistance can be avoided by creating a transient clone using the
+interpolation.  Note that the modifications are persistent.  This
+persistence can be avoided by creating a transient clone using the
 new() method.
 
     my $string = $inter->(LIST);      # $inter changed
@@ -350,7 +352,7 @@ This can be overcome by calling the safe() or package() methods.
 
 To simplify modifying the hash, a String::Interpolated object used in
 a HASH reference context will return a reference to the last hash
-arguement passed to object, implicitly calling exec({}) first if
+argument passed to object, implicitly calling exec({}) first if
 necessary.
 
     my %h = ( A => 1 );
@@ -362,7 +364,7 @@ necessary.
 Instruct the object to perform interpolation in the namespace defined
 by the GLOB.  For example the argument *Q:: would mean that the string
 should be interpolated in the context of the package Q.  The trailing
-'::' may be ommited.  
+'::' may be omitted.  
 
 Passing a package argument to the object causes it to stop using a
 Safe compartment if it previously was doing so.  If you want safe
@@ -458,7 +460,6 @@ sub exec {
     my $code = $$self->{code};
 
     if ( $$self->{implicit_safe} && !$safe ) {
-	require Safe;
 	$safe = $$self->{safe} = Safe->new;
 	$safe->deny('tie','bless');
     }
@@ -481,8 +482,9 @@ sub exec {
 
     $pkg = $safe->root if $safe;
 
-    local $_ = "$_", local *_ = %_ ? String::Interpolate::Func->wrap_hash('_',\%_) : {}
-	if $safe && ! $$self->{unsafe_underscore};
+    local $_ = do { no warnings 'uninitialized'; "$_"},
+    local *_ = %_ ? String::Interpolate::Func->wrap_hash('_',\%_) : {}
+    if $safe && ! $$self->{unsafe_underscore};
 
     my $safe_symbols = $safe && ! $$self->{unsafe_symbols};
 
@@ -647,7 +649,7 @@ For those heathens who don't like the OO interface.
 
 =item safe_interpolate
 
-Exportable function eqivalent to String::Interpolate->safe->exec(LIST).
+Exportable function equivalent to String::Interpolate->safe->exec(LIST).
 
 =cut
 
@@ -657,7 +659,7 @@ sub safe_interpolate {
 
 =item interpolate
 
-Exportable function eqivalent to
+Exportable function equivalent to
 String::Interpolate->lexicals->exec(LIST).
 
 =cut
@@ -705,7 +707,7 @@ sub trap {
 
 Tells the String::Interpolate object whether or not to use "unsafe
 underscore" mode.  In this mode no precautions are taken to prevent
-malicious code attemping to reach outside it's Safe compartment
+malicious code attempting to reach outside it's Safe compartment
 through the $_ and %_ variables.
 
     $i->unsafe_underscore;    # Enable unsafe underscore mode
@@ -792,7 +794,7 @@ sub lexicals {
 =item package
 
 Instructs the String::Interpolate object to forget its current Safe
-compartment or namespace and use the specified one henseforth.  The
+compartment or namespace and use the specified one henceforth.  The
 package name can be specified as a string, a GLOB or a GLOB reference.
 The trailing '::' may be ommited.  With an undefined argument this
 method instructs the object to use a new automatically allocated
@@ -830,7 +832,7 @@ sub package {
 
 Tells the String::Interpolate object whether or not to use a
 Safe::Hole object to wrap callbacks to subroutines specified in the
-symbol mapping hash.  Without a Safe::Hole eval(), symbolic refernces
+symbol mapping hash.  Without a Safe::Hole eval(), symbolic references
 and method calls in callbacks won't function normally.
 
     my $i = String::Interpolate->safe->safe_hole;
@@ -866,7 +868,7 @@ sub safe_hole {
 		require Carp;
 	        Carp::croak('String::Interpolate::safe_hole() requires Safe::Hole module');
 	    }
-	    $safe_hole = Safe::Hole->new;
+	    $safe_hole = Safe::Hole->new(($Safe::Hole::VERSION > 0.09) ? ({}) : ());
 	} else {
 	    undef $safe_hole;
 	}
@@ -880,11 +882,11 @@ sub safe_hole {
 Specify various options including Perl code to be complied in a
 BEGIN{} block prior to compiling the string to be interpolated.  When
 working in a Safe compartment, what you can do here is, of course,
-highly limited.  In pratice this is only useful for calling the
+highly limited.  In practice this is only useful for calling the
 import() an unimport() methods on the warnings and strict modules.
 
 For the most commonly used values, to control the handling of
-interpoating undefiened values, the following shorthands can also be
+interpolating undefined values, the following shorthands can also be
 used:
 
   NOWARN => 'unimport warnings qw(uninitialized)'
@@ -896,10 +898,10 @@ NOWARN.  All other warnings are enabled as are 'refs' and 'subs'
 strictures.
 
 You can call pragma() implicitly by passing SCALAR references to
-exec().  Futhermore pragma('TRAP') is a synonym for trap(1) and
+exec().  Furthermore pragma('TRAP') is a synonym for trap(1) and
 pragma('NO TRAP') is a synonym for trap(0).  Similarly for lexicals(),
 unsafe_symbols(), unsafe_underscore() and safe_hole().  This makes the
-following statments eqivalent:
+following statements equivalent:
 
     $i->(\'FATAL',\'NO TRAP',\'SAFE SYMBOLS');
     $i->pragma('FATAL','NO_TRAP','NO UNSAFE_SYMBOLS');
