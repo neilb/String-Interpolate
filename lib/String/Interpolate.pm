@@ -2,7 +2,7 @@ use strict;
 use warnings;
 
 package String::Interpolate;
-our $VERSION = 0.1;
+our $VERSION = 0.2;
 use Carp qw( croak );
 
 =head1 NAME
@@ -126,6 +126,12 @@ our %dbgpkg = (
 
 our $taint_flag = '';
 our $safe_hole;
+
+my %type_from_prefix = (
+			"\$" => 'SCALAR',
+			'@' => 'ARRAY',
+			'%' => 'HASH',
+			);
 
 use overload 
     '""' => sub { 
@@ -417,7 +423,7 @@ sub exec {
 	    $$self->{pos} = $_;
 	} elsif ( ref eq 'HASH' ) {
 	    my $map = \$$self->{map};
-	    if ( !$seenmap++ && @$$map ){
+	    if ( !$seenmap++ && $$map && @$$map ){
 		$$map = [];
 		$self->free_tmppkg;
 	    }
@@ -432,6 +438,7 @@ sub exec {
 	    $self->free_tmppkg;
 	    delete $$self->{pkg};
 	    delete $$self->{implicit_safe};
+	    delete $$self->{lexicals};
 	    $$self->{safe} = $_;
 	    $$self->{trap} = 1 unless defined $$self->{trap};
 	} else {
@@ -479,7 +486,26 @@ sub exec {
 
     my $safe_symbols = $safe && ! $$self->{unsafe_symbols};
 
-    for ( @{$$self->{map}} ) {
+    # use PadWalker qw( peek_my ); use Data::Dumper; die Dumper peek_my(2);
+    
+    my @pad_map;
+
+    if ( $$self->{lexicals} ) {
+	my $depth = 1;
+	$depth++ while caller($depth)->isa(__PACKAGE__);
+	# die "$depth ". scalar(caller($depth));
+	require PadWalker;
+	my $pad = PadWalker::peek_my($depth+1);
+	# use Data::Dumper; die Dumper $pad;
+	while ( my ( $k,$v ) = each %$pad ) {
+	    $k =~ s/^([@%\$])//
+		or die "$k does not start with \$, \@ or \%";
+	    $v = *$v{$type_from_prefix{$1}} if ref $v eq 'GLOB';
+	    push @pad_map => { $k => $v };
+	}
+    }
+
+    for ( @pad_map, @{$$self->{map}} ) {
 	$pkg ||= $$self->{tmppkg} ||= __PACKAGE__ . '::' . ++$pkgcount;
 	while ( my ( $k,$v ) = each %$_ ) {
 	    no strict 'refs';
@@ -603,6 +629,11 @@ sub exec {
 	$string = $$self->{trap} ? eval { &$code } : &$code; 
     }
     chop $string;
+
+    # If we copied the lexicals then we must clean house to
+    # avoid keeping them spuriously alive.
+    $self->free_tmppkg if $$self->{lexicals};
+
     $string;
 }
 
@@ -626,12 +657,13 @@ sub safe_interpolate {
 
 =item interpolate
 
-Exportable function eqivalent to String::Interpolate->exec(LIST).
+Exportable function eqivalent to
+String::Interpolate->lexicals->exec(LIST).
 
 =cut
 
 sub interpolate {
-    __PACKAGE__->exec(@_);
+    __PACKAGE__->lexicals->exec(@_);
 }
 
 =back
@@ -716,6 +748,47 @@ sub unsafe_symbols {
     $self;
 }
 
+=over 4
+
+=item lexicals
+
+This feature is EXPERIMENTAL.  Do not use it in real code.
+
+Tells the String::Interpolate object whether or not to use the
+PadWalker module to import all lexical variables from the calling
+context into the temporary package or Safe compartment.  By default
+this does not happen as it is conceptually ugly and quite expensive.
+
+    $i->lexicals;     # Enable lexicals
+    $i->lexicals(1)   # Enable lexicals 
+    $i->lexicals(0);  # Disable lexicals
+
+Returns the object so that it can be tagged on to constructor calls.
+
+    my $i = String::Interpolate->safe->lexicals;
+
+Enabling lexicals with a Safe compartment like this will give the code
+read-only access to all your lexical variables.
+
+Note that the lexicals used are those in scope at the final call that
+performs the interpolation, not those in scope when the
+String::Interpolate object is constructed.  Also you can't have your
+cake and eat it.  If you cannot use this feature at the same time as
+an explicit package or Safe compartment.
+
+=cut
+
+sub lexicals {
+    my $self = shift;
+    $self = $self->new unless ref $self;
+    my $lexicals = shift;
+    if ( ( $$self->{lexicals} = defined $lexicals ? $lexicals : 1 ) ) {
+	delete $$self->{pkg};
+	delete $$self->{safe};
+    }
+    $self;
+}
+
 =item package
 
 Instructs the String::Interpolate object to forget its current Safe
@@ -748,6 +821,7 @@ sub package {
     $self->free_tmppkg;
     delete $$self->{safe};
     delete $$self->{implicit_safe};
+    delete $$self->{lexicals};
     $$self->{pkg} = $$self->{explicit_pkg} = $pkg;
     $self;
 }
@@ -823,7 +897,7 @@ strictures.
 
 You can call pragma() implicitly by passing SCALAR references to
 exec().  Futhermore pragma('TRAP') is a synonym for trap(1) and
-pragma('NO TRAP') is a synonym for trap(0).  Similarly for
+pragma('NO TRAP') is a synonym for trap(0).  Similarly for lexicals(),
 unsafe_symbols(), unsafe_underscore() and safe_hole().  This makes the
 following statments eqivalent:
 
@@ -841,7 +915,7 @@ sub pragma {
     $self = $self->new unless ref $self;
     for my $pragma ( @_ ) {
 	my ( $no, $method, $un) =
-	    $pragma =~ /^(NO[ _]?)?(TRAP|SAFE[_ ]HOLE|(?:((?:UN)?)SAFE[_ ](?:SYMBOLS|UNDERSCORE)))$/;
+	    $pragma =~ /^(NO[ _]?)?(LEXICALS|TRAP|SAFE[_ ]HOLE|(?:((?:UN)?)SAFE[_ ](?:SYMBOLS|UNDERSCORE)))$/;
 	if ( $method ) {
 	    # For methods that start 'un' but for which the 'un' has been ommited
 	    # reinstate the un and invert the sense of the 'no' prefix.
