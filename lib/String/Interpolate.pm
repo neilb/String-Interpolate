@@ -11,7 +11,7 @@ use Carp qw( croak );
 String::Interpolate - Wrapper for builtin the Perl interpolation engine.
 
 =head1 SYNOPSIS
-    
+
     # Functional interface
     use String::Interpolate qw( safe_interpolate interpolate ); 
     our($GREET) = 'Hello'; # Cannot be lexical 
@@ -750,8 +750,6 @@ sub unsafe_symbols {
     $$self->{unsafe_symbols} = defined $unsafe_symbols ? $unsafe_symbols : 1;
     $self;
 }
-
-=over 4
 
 =item lexicals
 
