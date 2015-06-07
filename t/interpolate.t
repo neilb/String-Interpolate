@@ -37,7 +37,7 @@ $i->{b}{C} = 'bc';
 
 t( $B{C} eq 'bc');
 
-$i->{REV} = sub ($ ) { reverse @_ };
+$i->{REV} = sub ($) { reverse @_ };
 $i->{LC} = sub { lc shift };
 $i->{L} = sub () { 'lit' };
 $i->[1] = 'd1';
