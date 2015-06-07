@@ -1028,4 +1028,24 @@ sub AUTOLOAD {
 
 1;
 __END__
+
 =back
+
+=head1 REPOSITORY
+
+L<https://github.com/neilbowers/String-Interpolate>
+
+=head1 AUTHOR
+
+Created by Brian McCauley,
+currently maintained by Neil Bowers E<lt>neilb@cpan.orgE<gt>
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2002 by Brian McCauley.
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
+
+=cut
+
