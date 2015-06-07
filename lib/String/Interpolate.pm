@@ -1,8 +1,9 @@
-use strict;
-use warnings;
 
 package String::Interpolate;
-our $VERSION = 0.3;
+
+use 5.006;
+use strict;
+use warnings;
 use Carp qw( croak );
 
 =head1 NAME
