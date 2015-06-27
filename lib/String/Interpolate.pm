@@ -1031,6 +1031,10 @@ __END__
 
 =back
 
+=head1 SEE ALSO
+
+L<String::Interpolate::Shell>, L<String::Interpolate::RE>, L<String::Expand>, L<String::MatchInterpolate>.
+
 =head1 REPOSITORY
 
 L<https://github.com/neilbowers/String-Interpolate>
