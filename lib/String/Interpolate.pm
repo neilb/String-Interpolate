@@ -20,7 +20,7 @@ String::Interpolate - Wrapper for builtin the Perl interpolation engine.
     # Object interface
     use String::Interpolate;
     my $who;
-    my $template = new String::Interpolate { WHO => \$who };
+    my $template = String::Interpolate->new( { WHO => \$who } );
     $template->{TIME} = sub () { localtime }; # Tie $TIME to localtime()
     $template->( [ qw( now it ) ] ); # Set $1, $2
     $template->[3] = 'is'; # Sets $3
@@ -357,7 +357,7 @@ argument passed to object, implicitly calling exec({}) first if
 necessary.
 
     my %h = ( A => 1 );
-    my $i = new String::Interpolate \%h;
+    my $i = String::Interpolate->new( \%h );
     $i->{B} = 2;  # $h{B} = 2
 
 =item GLOB or GLOB reference
@@ -953,7 +953,7 @@ Returns, as an lvalue, the reference to the array that holds the
 values to use for the positional variables $1 and so on.
 
     my @p = qw ( one two three ); 
-    my $i = new String::Interpolate \@p; 
+    my $i = String::Interpolate->new( \@p );
     $i->positionals->[1] = "TWO";      # $p[1] = "TWO";
     $i->positionals = [ qw ( X Y ) ];  # Forget @p, use anon array
     undef $i->positionals;             # $1 etc. inherted from caller 
