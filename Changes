@@ -1,5 +1,9 @@
 Revision history for Perl module String::Interpolate
 
+0.32 2015-06-28 NEILB
+    - Added SEE ALSO section. SWEETKID++
+    - Got rid of indirect method notation in the doc. SWEETKID++
+
 0.31 2015-06-07 NEILB
     - Switched to Dist::Zilla
     - Fixed RT#95320 - removed space character from function prototype
