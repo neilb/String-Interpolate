@@ -191,7 +191,7 @@ sub new {
         $self = bless \ {
 	    defpgk => $defpgk,
 	    pkg => $defpgk,
-	    pragmas => $preset_pragma{NOWARN},
+	    pragma => $preset_pragma{NOWARN},
 	}, $class;
     }
     $self->exec(@_);
@@ -590,7 +590,7 @@ sub exec {
     	    croak("No string to interpolate");
 	}
 
-	$string = "BEGIN{import strict qw(refs subs); $$self->{pragmas}}; sub{<<$dlm\n$string\n$dlm\n}";
+	$string = "BEGIN{import strict qw(refs subs); $$self->{pragma}}; sub{<<$dlm\n$string\n$dlm\n}";
 
 	if ( $safe ) {
 	    no strict 'refs';
