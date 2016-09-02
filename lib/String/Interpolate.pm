@@ -172,7 +172,7 @@ new() if called as class methods.
 
 my %preset_pragma = (
    NOWARN => 'unimport warnings qw(uninitialized)',
-   WARN => '',
+   WARN => 'undef',
    FATAL => 'import warnings FATAL => qw(uninitialized); import strict qw(vars)',
  );
 		      
@@ -889,7 +889,7 @@ interpolating undefined values, the following shorthands can also be
 used:
 
   NOWARN => 'unimport warnings qw(uninitialized)'
-  WARN   => ''
+  WARN   => 'undef'
   FATAL  => 'import warnings FATAL => qw(uninitialized); import strict qw(vars)'
 
 The default state for a newly created String::Interpolate object is
