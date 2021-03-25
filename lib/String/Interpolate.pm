@@ -1037,7 +1037,7 @@ L<String::Interpolate::Shell>, L<String::Interpolate::RE>, L<String::Expand>, L<
 
 =head1 REPOSITORY
 
-L<https://github.com/neilbowers/String-Interpolate>
+L<https://github.com/neilb/String-Interpolate>
 
 =head1 AUTHOR
 
