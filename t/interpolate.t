@@ -5,7 +5,7 @@ use warnings;
 
 use String::Interpolate;
 
-print "1..28\n";
+print "1..33\n";
 
 my $testno;
 
@@ -102,4 +102,26 @@ for ( 'symbols', 'underscore' ) {
     
     $i->pragma("NO UNSAFE \U$_");
     t( ! $$i->{$method} );
+}
+
+
+{ # Test FATAL and NO TRAP.
+    my $fatal = 'String::Interpolate'->new({ declared => 'abc' })
+        ->pragma('FATAL', 'NO TRAP');
+
+    # Doesn't die in void context.
+    t( 1 == eval { $fatal->exec('$declared,$undeclared.'); 1 } );
+    # Dies in scalar context.
+    t( ! eval { my $scalar = $fatal->exec('$declared,$undeclared.'); 1 } );
+    # Dies in list context.
+    t( ! eval { my @arr = $fatal->exec('$declared,$undeclared.'); 1 } );
+}
+
+{ # Test the WARN pragma.
+    my $warn =  'String::Interpolate'->new({ abc => 'ABC' })
+        ->pragma('WARN');
+    my $warned;
+    local $SIG{__WARN__} = sub { $warned++ };
+    t( 'XABCY' eq $warn->exec('X$one$two${abc}Y') );
+    t( 2 == $warned );
 }
